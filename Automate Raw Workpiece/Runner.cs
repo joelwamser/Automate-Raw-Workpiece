@@ -17,10 +17,11 @@ namespace Automate_Raw_Workpiece
         static void Main(string[] args)
         {
             System.Diagnostics.Process computeBoundingBox = new System.Diagnostics.Process();
-            computeBoundingBox.StartInfo.FileName = "C:\\Users\\wamsej\\Joel\\RPI\\Internships\\STEP Tools\\Projects\\Compute Bounding Box Project\\Debug\\Compute Bounding Box Project.exe";
+	    if (args.Length < 1) return; //TODO: Print usage
+            computeBoundingBox.StartInfo.FileName = "..\\Debug\\Compute Bounding Box Project.exe";
 
             short port_number = 5001;
-            string inputStepNCFileName = "test_nokia_cell_phone.238";
+            string inputStepNCFileName = args[0];
             string outputWorkpieceFileName = "workpiece_" + inputStepNCFileName;
             outputWorkpieceFileName = outputWorkpieceFileName.Replace(".238", "");
             string finalFileName = "rawpieceadded_" + inputStepNCFileName;

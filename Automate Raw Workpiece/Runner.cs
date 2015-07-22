@@ -19,6 +19,7 @@ namespace Automate_Raw_Workpiece
             System.Diagnostics.Process computeBoundingBox = new System.Diagnostics.Process();
 	    if (args.Length < 1) return; //TODO: Print usage
             computeBoundingBox.StartInfo.FileName = "..\\Debug\\Compute Bounding Box Project.exe";
+	    BBoxer.RunMain("Filename.stp");
 
             short port_number = 5001;
             string inputStepNCFileName = args[0];

@@ -49,6 +49,12 @@
   <ItemGroup>
     <Folder Include="Properties\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Compute Bounding Box\Compute Bounding Box Project.vcxproj">
+      <Project>{20d767c6-1f0e-4ca9-9f39-f670a2fd86a9}</Project>
+      <Name>Compute Bounding Box Project</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

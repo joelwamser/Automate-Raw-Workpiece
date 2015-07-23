@@ -55,7 +55,6 @@ double zmax = 0.0;
 //this value must be >= 1 or 0
 double percentage = 2.0;
 
-//const char * srcfile = "workpiece_test_Haas_part";
 const char * prepend = "rawpiece_";
 
 StixUnit angleUnit;
@@ -105,107 +104,26 @@ static void print_transform(
 stp_shape_representation * create_empty_product_with_geometry(
     const StixUnit &au, const StixUnit &lu, const StixUnit &sau);
 
-
-int main(int argc, char ** argv)
+std::string run(int argc, char ** argv)
 {
     ROSE.quiet(1);
     stplib_init();	// initialize merged cad library
     stixmesh_init();
 
-    int iResult;
-    SOCKET ConnectSocket;
-    WSADATA wsaData;
-    ConnectSocket = INVALID_SOCKET;
-    struct addrinfo *result = NULL,
-	*ptr = NULL,
-	hints;
-    iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-
-    if (iResult != 0)
-    {
-	printf("WSAStartup failed with error: %d\n", iResult);
-	system("pause");
-	exit(1);
-    }
-
-    ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = PF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
-
-    iResult = getaddrinfo("localhost", "5001", &hints, &result);
-
-    if (iResult != 0)
-    {
-	printf("getaddrinfo failed with error: %d\n", iResult);
-	WSACleanup();
-	system("pause");
-	exit(1);
-    }
-
-    for (ptr = result; ptr != NULL; ptr = ptr->ai_next)
-    {
-	ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
-
-	if (ConnectSocket == INVALID_SOCKET)
-	{
-	    printf("socket failed with error: %ld\n", WSAGetLastError());
-	    WSACleanup();
-	    system("pause");
-	    exit(1);
-	}
-
-	iResult = connect(ConnectSocket, ptr->ai_addr, (int)ptr->ai_addrlen);
-
-	if (iResult == SOCKET_ERROR)
-	{
-	    printf("The server is down... did not connect: %ld\n", WSAGetLastError());
-	    closesocket(ConnectSocket);
-	    ConnectSocket = INVALID_SOCKET;
-	}
-	else
-	{
-	    break;
-	}
-    }
-
-    freeaddrinfo(result);
-
-    if (ConnectSocket == INVALID_SOCKET)
-    {
-	printf("Unable to connect to server!\n");
-	WSACleanup();
-	system("pause");
-	exit(1);
-    }
-
-    int hold = 0;
-    iResult = recv(ConnectSocket, (char*)&hold, sizeof(int), 0);
-
-    char srcfile[1024];
-    memset(srcfile, '\0', sizeof(srcfile));
-    iResult = recv(ConnectSocket, srcfile, sizeof(srcfile), 0);
-    srcfile[hold] = '\0';
-
-    char* outputFileName = (char*)malloc((strlen(srcfile) + strlen(prepend) + 1)*sizeof(char));
+    char* outputFileName = (char*)malloc((strlen(argv[0]) + strlen(prepend) + 1)*sizeof(char));
     outputFileName[0] = '\0';
     strcat(outputFileName, prepend);
-    strcat(outputFileName, srcfile);
-    outputFileName[strlen(prepend) + strlen(srcfile)] = '\0';
+    strcat(outputFileName, argv[0]);
+    outputFileName[strlen(prepend) + strlen(argv[0])] = '\0';
 
-    /*closesocket(ConnectSocket);
-    ConnectSocket = INVALID_SOCKET;
-    WSACleanup();
-    system("pause");
-    return 0;*/
-
-    RoseDesign * d = ROSE.findDesign(srcfile);
+    RoseDesign * d = ROSE.findDesign(argv[0]);
     RoseDesign* output = new RoseDesign(outputFileName);
     ROSE.useDesign(output);
-    if (!d) {
-	printf("Could not open STEP file %s\n", srcfile);
-	system("pause");
-	exit(1);
+    if (!d)
+	{
+		printf("Could not open STEP file %s\n", argv[0]);
+		system("pause");
+		exit(1);
     }
 
     // prepare for working with assemblies
@@ -230,44 +148,22 @@ int main(int argc, char ** argv)
     // Now print the mesh details along with placement info
     for (i = 0, sz = roots.size(); i < sz; i++)
     {
-	print_mesh_for_product(roots[i]);
+		print_mesh_for_product(roots[i]);
     }
 
     //CREATE RAW PIECE
     if (PRINT_ALL_TRIANGLES)
     {
-	printf("\nxmin: %f\nxmax: %f\nymin: %f\nymax: %f\nzmin: %f\nzmax: %f",
-	    xmin, xmax, ymin, ymax, zmin, zmax);
-	//NOW CREATE BLOCK OF THIS SIZE
-	output_raw_piece(xmin, xmax, ymin, ymax, zmin, zmax);
+		printf("\nxmin: %f\nxmax: %f\nymin: %f\nymax: %f\nzmin: %f\nzmax: %f",
+			xmin, xmax, ymin, ymax, zmin, zmax);
+		//NOW CREATE BLOCK OF THIS SIZE
+		output_raw_piece(xmin, xmax, ymin, ymax, zmin, zmax);
     }
 
-    std::cout << "outputFileName: " << outputFileName << std::endl;
-    std::cout << "strlen(srcfile): " << strlen(srcfile) << std::endl;
-    std::cout << "sizeof(srcfile): " << sizeof(srcfile) << std::endl;
-    std::cout << "Received message from automate raw workpiece: ";
-    for (unsigned int i = 0; i < strlen(srcfile); ++i)
-    {
-	std::cout << srcfile[i];
-    }
-    std::cout << std::endl;
-    std::cout << "strlen(outputFileName): " << strlen(outputFileName) << std::endl;
-    std::cout << "hold: " << hold << std::endl;
-    /*std::cout << "lengthOfMessage: " << lengthOfMessage << std::endl;
-    std::cout << "Received message for length: ";
-    for(unsigned int i = 0; i < strlen(length); ++i)
-    {
-    //maybe cast this as an int
-    std::cout << length[i];
-    }
-    std::cout << std::endl;*/
-    send(ConnectSocket, outputFileName, strlen(outputFileName), 0);
-    closesocket(ConnectSocket);
-    ConnectSocket = INVALID_SOCKET;
-    WSACleanup();
+	std::string returnName(outputFileName);
     system("pause");
     free(outputFileName);
-    return 0;
+    return returnName;
 }
 
 
@@ -302,8 +198,8 @@ void facet_product(
     // facet all direct shapes and any related shapes.
     for (i = 0, sz = pd_mgr->shapes.size(); i < sz; i++)
     {
-	stp_representation * rep = pd_mgr->shapes[i];
-	facet_shape_tree(rep);
+		stp_representation * rep = pd_mgr->shapes[i];
+		facet_shape_tree(rep);
     }
 }
 
@@ -328,21 +224,21 @@ void facet_shape_tree(
     SetOfstp_representation_item * items = rep->items();
     for (i = 0, sz = items->size(); i < sz; i++)
     {
-	stp_representation_item  * it = items->get(i);
+		stp_representation_item  * it = items->get(i);
 
-	if (!StixMeshStpBuilder::canMake(rep, it))
-	    continue;
+		if (!StixMeshStpBuilder::canMake(rep, it))
+			continue;
 
-	// Chance that it might have been previously faceted if it is
-	// somehow reused by a different part.
-	if (stixmesh_cache_find(rep))
-	    continue;
+		// Chance that it might have been previously faceted if it is
+		// somehow reused by a different part.
+		if (stixmesh_cache_find(rep))
+			continue;
 
 
-	StixMeshStp * mesh = stixmesh_create(rep, it);
-	if (mesh) {
-	    stixmesh_cache_add(it, mesh);
-	}
+		StixMeshStp * mesh = stixmesh_create(rep, it);
+		if (mesh) {
+			stixmesh_cache_add(it, mesh);
+		}
     }
 
 
@@ -354,20 +250,20 @@ void facet_shape_tree(
     // All shapes attached by a representation_relationship
     for (i = 0, sz = rep_mgr->child_rels.size(); i < sz; i++)
     {
-	stp_shape_representation_relationship * rel = rep_mgr->child_rels[i];
-	stp_representation * child = stix_get_shape_usage_child_rep(rel);
+		stp_shape_representation_relationship * rel = rep_mgr->child_rels[i];
+		stp_representation * child = stix_get_shape_usage_child_rep(rel);
 
-	facet_shape_tree(child);
+		facet_shape_tree(child);
     }
 
 
     // All shapes attached by mapped_item
     for (i = 0, sz = rep_mgr->child_mapped_items.size(); i < sz; i++)
     {
-	stp_mapped_item * rel = rep_mgr->child_mapped_items[i];
-	stp_representation * child = stix_get_shape_usage_child_rep(rel);
+		stp_mapped_item * rel = rep_mgr->child_mapped_items[i];
+		stp_representation * child = stix_get_shape_usage_child_rep(rel);
 
-	facet_shape_tree(child);
+		facet_shape_tree(child);
     }
 }
 
@@ -413,27 +309,27 @@ void print_mesh_for_product(
     printf("ROOT PRODUCT #%lu - %s\n", pd->entity_id(), pname);
     for (i = 0, sz = pm->shapes.size(); i < sz; i++)
     {
-	if (i > 0) {
-	    printf("------------------------------\n");
-	    printf("Alternate shape tree #%u for ROOT PRODUCT #%lu - %s\n",
-		i, pd->entity_id(), pname);
-	}
+		if (i > 0) {
+			printf("------------------------------\n");
+			printf("Alternate shape tree #%u for ROOT PRODUCT #%lu - %s\n",
+			i, pd->entity_id(), pname);
+		}
 
-	// The root placement is usually the identity matrix but some
-	// systems put a standalone AP3D at the top to place the whole
-	// thing in the global space.
-	StixMtrx starting_placement;
-	stp_shape_representation * rep = pm->shapes[i];
+		// The root placement is usually the identity matrix but some
+		// systems put a standalone AP3D at the top to place the whole
+		// thing in the global space.
+		StixMtrx starting_placement;
+		stp_shape_representation * rep = pm->shapes[i];
 
-	StixMgrAsmShapeRep * rep_mgr = StixMgrAsmShapeRep::find(rep);
-	if (rep_mgr && rep_mgr->root_placement) {
-	    starting_placement.put(rep_mgr->root_placement);
+		StixMgrAsmShapeRep * rep_mgr = StixMgrAsmShapeRep::find(rep);
+		if (rep_mgr && rep_mgr->root_placement) {
+			starting_placement.put(rep_mgr->root_placement);
 
-	    printf("Using Custom Coordinate System defined by #%lu\n",
-		rep_mgr->root_placement->entity_id());
-	}
+			printf("Using Custom Coordinate System defined by #%lu\n",
+			rep_mgr->root_placement->entity_id());
+		}
 
-	print_mesh_for_shape(rep, starting_placement, 0, 0, 0);
+		print_mesh_for_shape(rep, starting_placement, 0, 0, 0);
     }
 }
 
@@ -460,7 +356,7 @@ void print_mesh_for_shape(
     // indent for a nice tree printout
     if (pd) nest_depth++;
     for (i = 0; i < nest_depth; i++)
-	nest_indent += "\t";
+		nest_indent += "\t";
 
 
     // print the usage of a particular shape, given the relation that
@@ -470,16 +366,16 @@ void print_mesh_for_shape(
     // Display the mesh information for the shape
 
     if (pd) {
-	stp_product_definition_formation * pdf = pd->formation();
-	stp_product * p = pdf ? pdf->of_product() : 0;
+		stp_product_definition_formation * pdf = pd->formation();
+		stp_product * p = pdf ? pdf->of_product() : 0;
 
-	const char * pname = p ? p->name() : 0;
-	if (!pname || !*pname) pname = "[no name]";
+		const char * pname = p ? p->name() : 0;
+		if (!pname || !*pname) pname = "[no name]";
 
-	fputs(nest_indent.as_const(), stdout);
-	fputs("--------------------\n", stdout);
-	fputs(nest_indent.as_const(), stdout);
-	printf("PRODUCT #%lu - %s\n", pd->entity_id(), pname);
+		fputs(nest_indent.as_const(), stdout);
+		fputs("--------------------\n", stdout);
+		fputs(nest_indent.as_const(), stdout);
+		printf("PRODUCT #%lu - %s\n", pd->entity_id(), pname);
     }
 
     // Does the rep have any meshed items?  In an assembly, some reps
@@ -499,17 +395,17 @@ void print_mesh_for_shape(
     unsigned solids_printed = 0;
     for (i = 0, sz = items->size(); i < sz; i++)
     {
-	stp_representation_item  * it = items->get(i);
-	StixMeshStp * mesh = stixmesh_cache_find(it);
-	if (mesh) {
-	    print_mesh_details(mesh, rep_xform, it, nest_indent.as_const());
-	    solids_printed++;
-	}
+		stp_representation_item  * it = items->get(i);
+		StixMeshStp * mesh = stixmesh_cache_find(it);
+		if (mesh) {
+			print_mesh_details(mesh, rep_xform, it, nest_indent.as_const());
+			solids_printed++;
+		}
     }
 
     if (!solids_printed) {
-	fputs(nest_indent.as_const(), stdout);
-	printf(" -- no meshes in representation --\n");
+		fputs(nest_indent.as_const(), stdout);
+		printf(" -- no meshes in representation --\n");
     }
 
     // Go through all of the child shapes which can be attached by a
@@ -524,32 +420,32 @@ void print_mesh_for_shape(
 
     for (i = 0, sz = rep_mgr->child_rels.size(); i < sz; i++)
     {
-	stp_shape_representation_relationship * rel = rep_mgr->child_rels[i];
-	stp_representation * child = stix_get_shape_usage_child_rep(rel);
-	stp_product_definition * cpd =
-	    stix_get_shape_usage_child_product(rel);
+		stp_shape_representation_relationship * rel = rep_mgr->child_rels[i];
+		stp_representation * child = stix_get_shape_usage_child_rep(rel);
+		stp_product_definition * cpd =
+			stix_get_shape_usage_child_product(rel);
 
-	// Move to location in enclosing asm
-	StixMtrx child_xform = stix_get_shape_usage_xform(rel);
-	child_xform = child_xform * rep_xform;
+		// Move to location in enclosing asm
+		StixMtrx child_xform = stix_get_shape_usage_xform(rel);
+		child_xform = child_xform * rep_xform;
 
-	print_mesh_for_shape(child, child_xform, rel, cpd, nest_depth);
+		print_mesh_for_shape(child, child_xform, rel, cpd, nest_depth);
     }
 
 
 
     for (i = 0, sz = rep_mgr->child_mapped_items.size(); i < sz; i++)
     {
-	stp_mapped_item * rel = rep_mgr->child_mapped_items[i];
-	stp_representation * child = stix_get_shape_usage_child_rep(rel);
-	stp_product_definition * cpd =
-	    stix_get_shape_usage_child_product(rel);
+		stp_mapped_item * rel = rep_mgr->child_mapped_items[i];
+		stp_representation * child = stix_get_shape_usage_child_rep(rel);
+		stp_product_definition * cpd =
+			stix_get_shape_usage_child_product(rel);
 
-	// Move to location in enclosing asm
-	StixMtrx child_xform = stix_get_shape_usage_xform(rel);
-	child_xform = child_xform * rep_xform;
+		// Move to location in enclosing asm
+		StixMtrx child_xform = stix_get_shape_usage_xform(rel);
+		child_xform = child_xform * rep_xform;
 
-	print_mesh_for_shape(child, child_xform, rel, cpd, nest_depth);
+		print_mesh_for_shape(child, child_xform, rel, cpd, nest_depth);
     }
 
 }
@@ -565,48 +461,48 @@ void print_mesh_details(
     fputs("\n", stdout);
     fputs(pfx, stdout);
     printf("Solid #%lu (%s)\n",
-	solid->entity_id(),
-	solid->domain()->name()
-	);
+		solid->entity_id(),
+		solid->domain()->name()
+		);
 
     if (!mesh) {
-	fputs(pfx, stdout);
-	printf(" -- no mesh --\n");
+		fputs(pfx, stdout);
+		printf(" -- no mesh --\n");
     }
     else
     {
-	const StixMeshFacetSet * fs = mesh->getFacetSet();
+		const StixMeshFacetSet * fs = mesh->getFacetSet();
 
-	fputs(pfx, stdout);
-	printf(
-	    "mesh has %u triangles\n",
-	    fs->getFacetCount()
-	    );
+		fputs(pfx, stdout);
+		printf(
+			"mesh has %u triangles\n",
+			fs->getFacetCount()
+			);
 
-	fputs(pfx, stdout);
-	printf(
-	    "step faces: %u , step edges: %u\n",
-	    mesh->getFaceCount(),
-	    mesh->getEdgeCount()
-	    );
+		fputs(pfx, stdout);
+		printf(
+			"step faces: %u , step edges: %u\n",
+			mesh->getFaceCount(),
+			mesh->getEdgeCount()
+			);
 
-	fputs(pfx, stdout);
-	printf(
-	    "step global uncertainty: %g\n",
-	    mesh->getGlobalUncertainty()
-	    );
+		fputs(pfx, stdout);
+		printf(
+			"step global uncertainty: %g\n",
+			mesh->getGlobalUncertainty()
+			);
 
-	// Print all of the triangles - Flip the flag below if you
-	// want this.  It produces a large amount of output!
-	//
+		// Print all of the triangles - Flip the flag below if you
+		// want this.  It produces a large amount of output!
+		//
 
-	if (PRINT_ALL_TRIANGLES)
-	{
-	    unsigned i, sz;
+		if (PRINT_ALL_TRIANGLES)
+		{
+			unsigned i, sz;
 
-	    for (i = 0, sz = fs->getFacetCount(); i < sz; i++)
-		print_triangle(fs, mesh_xform, i, pfx);
-	}
+			for (i = 0, sz = fs->getFacetCount(); i < sz; i++)
+			print_triangle(fs, mesh_xform, i, pfx);
+		}
     }
 }
 
@@ -648,14 +544,14 @@ void print_triangle(
     //get initial values for the min and max values on first run through
     if (!initial_input_values)
     {
-	xmin = xmax = v[0];
-	ymin = ymax = v[1];
-	zmin = zmax = v[2];
-	initial_input_values = 1;
+		xmin = xmax = v[0];
+		ymin = ymax = v[1];
+		zmin = zmax = v[2];
+		initial_input_values = 1;
     }
     else
     {
-	calc_min_max_vertices(v[0], v[1], v[2]);
+		calc_min_max_vertices(v[0], v[1], v[2]);
     }
 
     stixmesh_transform(v, xform, fs->getVertex(f->verts[1]));
@@ -892,12 +788,16 @@ stp_shape_representation * create_empty_product_with_geometry(const StixUnit &au
     // Done
     return rep;
 }
-public ref class BBoxer{
-public:
-    static int RunMain(System::String^ wpname){
-	char *foo[1];
-	foo[0] = (char*)Marshal::StringToHGlobalAnsi(wpname).ToPointer();
-	return main(1,foo);
-    }
-    
+
+public ref class BBoxer
+{
+	public:
+		static System::String^ RunMain(System::String^ wpname)
+		{
+			char *foo[1];
+			foo[0] = (char*)Marshal::StringToHGlobalAnsi(wpname).ToPointer();
+			std::string returnFileName = run(1,foo);
+			System::String^ rfn = gcnew System::String(returnFileName.c_str());
+			return rfn;
+		}
 };

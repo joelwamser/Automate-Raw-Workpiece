@@ -37,6 +37,8 @@
 
 using namespace System::Runtime::InteropServices;
 #define VERTEX_NORMAL_RENAMED_IN_LATEST_VERSIONS 3.14
+#define FOUNDMAX(x) (std::cout << "Found " << #x << ": " << x << std::endl << "Enter new " << #x << " that is greater than or equal to found " << #x << ": ")
+#define FOUNDMIN(x) (std::cout << "Found " << #x << ": " << x << std::endl << "Enter new " << #x << " that is less than or equal to found " << #x << ": ")
 
 // When this flag is 0, the print_mesh_details() function only prints
 // some summary information about each mesh.  When set to 1, it will
@@ -52,8 +54,8 @@ double ymin = 0.0;
 double ymax = 0.0;
 double zmin = 0.0;
 double zmax = 0.0;
-//this value must be >= 1 or 0
-double percentage = 2.0;
+//this value must be > 0
+double percentage = 0.0;
 
 const char * prepend = "rawpiece_";
 
@@ -93,8 +95,13 @@ static void print_triangle(
 //Joel Wamser
 void calc_min_max_vertices(double &x, double &y, double &z);
 
-void output_raw_piece(const double &xmin, const double &xmax, const double &ymin,
-    const double &ymax, const double &zmin, const double &zmax);
+double user_modify_max(double &input);
+
+double user_modify_min(double &input);
+
+void user_modify_all_minmax_values();
+
+void output_raw_piece();
 
 static void print_transform(
     StixMtrx &xform,
@@ -154,10 +161,11 @@ std::string run(int argc, char ** argv)
     //CREATE RAW PIECE
     if (PRINT_ALL_TRIANGLES)
     {
-		printf("\nxmin: %f\nxmax: %f\nymin: %f\nymax: %f\nzmin: %f\nzmax: %f",
+		printf("\nxmin: %f\nxmax: %f\nymin: %f\nymax: %f\nzmin: %f\nzmax: %f\n",
 			xmin, xmax, ymin, ymax, zmin, zmax);
 		//NOW CREATE BLOCK OF THIS SIZE
-		output_raw_piece(xmin, xmax, ymin, ymax, zmin, zmax);
+		user_modify_all_minmax_values();
+		output_raw_piece();
     }
 
 	std::string returnName(outputFileName);
@@ -507,8 +515,6 @@ void print_mesh_details(
 }
 
 
-
-
 void print_triangle(
     const StixMeshFacetSet * fs,
     StixMtrx &xform,
@@ -591,19 +597,18 @@ void calc_min_max_vertices(double &x, double &y, double &z)
     zmax = max(z, zmax);
 }
 
-void output_raw_piece(const double &xmin, const double &xmax, const double &ymin,
-    const double &ymax, const double &zmin, const double &zmax)
+void output_raw_piece()
 {
     RoseDesign * d = ROSE.design();
     stp_shape_representation* shape = create_empty_product_with_geometry(angleUnit, lengthUnit, solidAngleUnit);
-    double x_width = (xmax - xmin) + ((xmax - xmin)*(percentage / 100));
-    double y_width = (ymax - ymin) + ((ymax - ymin)*(percentage / 100));
-    double z_width = (zmax - zmin) + ((zmax - zmin)*(percentage / 100));
+    double x_width = (xmax - xmin);
+    double y_width = (ymax - ymin);
+    double z_width = (zmax - zmin);
     double x = (xmax + xmin) / 2;
     double y = (ymax + ymin) / 2;
     //this will eventually be zmax.
     //its zmin/2 right now to leave room for the percentage increase
-    double z = zmax + ((z_width - (zmax - zmin)) / 2);
+    double z = zmax;
     std::cout << std::endl << "x_width = " << x_width << std::endl << "y_width = "
 	<< y_width << std::endl << "z_width = " << z_width << std::endl;
     char* color = "red";
@@ -787,6 +792,54 @@ stp_shape_representation * create_empty_product_with_geometry(const StixUnit &au
 
     // Done
     return rep;
+}
+
+double user_modify_max(double &input)
+{
+	double temp;
+	std::cin >> temp;
+	if(temp >= input)
+	{
+		return temp;
+	}
+	else
+	{
+		std::cout << "Inputted Value is less than found value" << std::endl
+			<< "No change will be made to found value" << std::endl;
+		return input;
+	}
+}
+
+double user_modify_min(double &input)
+{
+	double temp;
+	std::cin >> temp;
+	if(temp <= input)
+	{
+		return temp;
+	}
+	else
+	{
+		std::cout << "Inputted Value is greater than found value" << std::endl
+			<< "No change will be made to found value" << std::endl;
+		return input;
+	}
+}
+
+void user_modify_all_minmax_values()
+{
+	FOUNDMAX(xmax);
+	xmax = user_modify_max(xmax);
+	FOUNDMIN(xmin);
+	xmin = user_modify_min(xmin);
+	FOUNDMAX(ymax);
+	ymax = user_modify_max(ymax);
+	FOUNDMIN(ymin);
+	ymin = user_modify_min(ymin);
+	FOUNDMAX(zmax);
+	zmax = user_modify_max(zmax);
+	FOUNDMIN(zmin);
+	zmin = user_modify_min(zmin);
 }
 
 public ref class BBoxer

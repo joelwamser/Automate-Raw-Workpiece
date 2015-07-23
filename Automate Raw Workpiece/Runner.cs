@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using STEPNCLib;
 using System.Net;
-using System.Net.Sockets;
 using System.Configuration;
 using System.IO;
 

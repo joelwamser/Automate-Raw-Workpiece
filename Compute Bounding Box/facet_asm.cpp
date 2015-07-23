@@ -54,10 +54,8 @@ double ymin = 0.0;
 double ymax = 0.0;
 double zmin = 0.0;
 double zmax = 0.0;
-//this value must be > 0
-double percentage = 0.0;
 
-const char * prepend = "rawpiece_";
+std::string prepend = "rawpiece_";
 
 StixUnit angleUnit;
 StixUnit lengthUnit;
@@ -117,14 +115,11 @@ std::string run(int argc, char ** argv)
     stplib_init();	// initialize merged cad library
     stixmesh_init();
 
-    char* outputFileName = (char*)malloc((strlen(argv[0]) + strlen(prepend) + 1)*sizeof(char));
-    outputFileName[0] = '\0';
-    strcat(outputFileName, prepend);
-    strcat(outputFileName, argv[0]);
-    outputFileName[strlen(prepend) + strlen(argv[0])] = '\0';
+	std::string outputFileName(argv[0]);
+	outputFileName = prepend + outputFileName;
 
     RoseDesign * d = ROSE.findDesign(argv[0]);
-    RoseDesign* output = new RoseDesign(outputFileName);
+    RoseDesign* output = new RoseDesign(outputFileName.c_str());
     ROSE.useDesign(output);
     if (!d)
 	{
@@ -168,10 +163,8 @@ std::string run(int argc, char ** argv)
 		output_raw_piece();
     }
 
-	std::string returnName(outputFileName);
     system("pause");
-    free(outputFileName);
-    return returnName;
+    return outputFileName;
 }
 
 
@@ -606,8 +599,6 @@ void output_raw_piece()
     double z_width = (zmax - zmin);
     double x = (xmax + xmin) / 2;
     double y = (ymax + ymin) / 2;
-    //this will eventually be zmax.
-    //its zmin/2 right now to leave room for the percentage increase
     double z = zmax;
     std::cout << std::endl << "x_width = " << x_width << std::endl << "y_width = "
 	<< y_width << std::endl << "z_width = " << z_width << std::endl;

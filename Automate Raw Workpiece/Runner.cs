@@ -16,12 +16,6 @@ namespace Automate_Raw_Workpiece
         //and a new stepnc file
         static void Main(string[] args)
         {
-            System.Diagnostics.Process computeBoundingBox = new System.Diagnostics.Process();
-	    if (args.Length < 1) return; //TODO: Print usage
-            computeBoundingBox.StartInfo.FileName = "..\\Debug\\Compute Bounding Box Project.exe";
-	    BBoxer.RunMain("Filename.stp");
-
-            short port_number = 5001;
             string inputStepNCFileName = args[0];
             string outputWorkpieceFileName = "workpiece_" + inputStepNCFileName;
             outputWorkpieceFileName = outputWorkpieceFileName.Replace(".238", "");
@@ -30,32 +24,8 @@ namespace Automate_Raw_Workpiece
             asm1.Open238(inputStepNCFileName);
             long ID = asm1.GetCurrentWorkpiece();
             asm1.ExportWorkpiece(ID, outputWorkpieceFileName);
-            //eventually get rid of this line
-            Console.WriteLine(Dns.GetHostEntry("localhost").AddressList[0]);
-            IPAddress ipAddress = Dns.GetHostEntry("localhost").AddressList[0];
-            TcpListener listener = new TcpListener(ipAddress, port_number);
-            listener.Start();
 
-            computeBoundingBox.Start();
-            //wait until a request has been made
-            while (!listener.Pending());
-            Socket soc = listener.AcceptSocket(); //blocks
-            //eventually get rid of this line
-            Console.WriteLine("Got here (connected)");
-            NetworkStream s = new NetworkStream(soc);
-            StreamWriter sw = new StreamWriter(s);
-            //sw.WriteLine(IPAddress.HostToNetworkOrder((long)outputWorkpieceFileName.Length));
-            Console.WriteLine(outputWorkpieceFileName.Length);
-            byte[] myWriteBuffer = BitConverter.GetBytes(outputWorkpieceFileName.Length);
-            //Array.Reverse(myWriteBuffer);
-            s.Write(myWriteBuffer, 0, myWriteBuffer.Length);
-            sw.AutoFlush = true;
-            sw.WriteLine(outputWorkpieceFileName);
-            StreamReader sr = new StreamReader(s);
-            string rawMaterialName = sr.ReadLine();
-            s.Close();
-            soc.Close();
-
+            string rawMaterialName = BBoxer.RunMain(outputWorkpieceFileName);
             Console.WriteLine(rawMaterialName);
             Console.ReadLine();
             asm1.Rawpiece(rawMaterialName);
